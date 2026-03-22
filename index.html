@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>世界天氣查詢</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%) !important;
+        }
+
+        .weather-info {
+            display: none;
+        }
+
+        .weather-info.show {
+            display: block;
+        }
+
+        .city-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .weather-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .temperature {
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .weather-description {
+            text-align: center;
+            color: #555;
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-transform: capitalize;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .detail-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .detail-label {
+            color: #999;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            color: #333;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+            text-align: center;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-weight: bold;
+            display: none;
+            margin-top: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .suggested-cities {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .suggested-cities h3 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .cities-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .city-btn {
+            padding: 8px 12px;
+            background: #f0f0f0;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .city-btn:hover {
+            background: #e0e0e0;
+            transform: none;
+            padding: 8px 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌍 世界天氣查詢</h1>
+
+        <div class="search-box">
+            <input 
+                type="text" 
+                id="cityInput" 
+                placeholder="輸入城市名稱 (例如: 台北、東京、紐約)"
+                autocomplete="off"
+            >
+            <button class="search-btn" onclick="searchWeather()">搜尋</button>
+        </div>
+
+        <div class="loading" id="loading">
+            加載中...
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <div class="weather-info" id="weatherInfo">
+            <div class="city-name" id="cityName"></div>
+            <div class="weather-card">
+                <div class="temperature" id="temperature"></div>
+                <div class="weather-description" id="weatherDescription"></div>
+                <div class="weather-details">
+                    <div class="detail-item">
+                        <div class="detail-label">體感溫度</div>
+                        <div class="detail-value" id="feelsLike"></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">濕度</div>
+                        <div class="detail-value" id="humidity"></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">風速</div>
+                        <div class="detail-value" id="windSpeed"></div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">氣壓</div>
+                        <div class="detail-value" id="pressure"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="suggested-cities">
+            <h3>熱門城市</h3>
+            <div class="cities-list">
+                <button class="city-btn" onclick="searchCity('台北')">台北</button>
+                <button class="city-btn" onclick="searchCity('東京')">東京</button>
+                <button class="city-btn" onclick="searchCity('倫敦')">倫敦</button>
+                <button class="city-btn" onclick="searchCity('紐約')">紐約</button>
+                <button class="city-btn" onclick="searchCity('巴黎')">巴黎</button>
+                <button class="city-btn" onclick="searchCity('香港')">香港</button>
+                <button class="city-btn" onclick="searchCity('新加坡')">新加坡</button>
+                <button class="city-btn" onclick="searchCity('雪梨')">雪梨</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const cityInput = document.getElementById('cityInput');
+        const weatherInfo = document.getElementById('weatherInfo');
+        const errorMessage = document.getElementById('errorMessage');
+        const loading = document.getElementById('loading');
+
+        // Enter 鍵搜尋
+        cityInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchWeather();
+            }
+        });
+
+        async function searchWeather() {
+            const city = cityInput.value.trim();
+            if (!city) {
+                showError('請輸入城市名稱');
+                return;
+            }
+            searchCity(city);
+        }
+
+        async function searchCity(city) {
+            cityInput.value = city;
+            loading.classList.add('show');
+            weatherInfo.classList.remove('show');
+            errorMessage.classList.remove('show');
+
+            try {
+                // 使用 Open-Meteo API (不需要 API key)
+                // 首先透過 Nominatim 獲取城市的經緯度
+                const geoResponse = await fetch(
+                    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`
+                );
+                const geoData = await geoResponse.json();
+
+                if (geoData.length === 0) {
+                    showError('找不到該城市，請檢查拼寫');
+                    loading.classList.remove('show');
+                    return;
+                }
+
+                const { lat, lon, display_name } = geoData[0];
+
+                // 使用 Open-Meteo 獲取天氣信息
+                const weatherResponse = await fetch(
+                    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,pressure_msl&wind_speed_unit=kmh&temperature_unit=celsius&timezone=auto`
+                );
+                const weatherData = await weatherResponse.json();
+
+                const current = weatherData.current;
+                const cityName = display_name.split(',')[0];
+
+                // 更新 UI
+                document.getElementById('cityName').textContent = cityName;
+                document.getElementById('temperature').textContent = 
+                    Math.round(current.temperature_2m) + '°C';
+                document.getElementById('feelsLike').textContent = 
+                    Math.round(current.apparent_temperature) + '°C';
+                document.getElementById('humidity').textContent = 
+                    current.relative_humidity_2m + '%';
+                document.getElementById('windSpeed').textContent = 
+                    Math.round(current.wind_speed_10m) + ' km/h';
+                document.getElementById('pressure').textContent = 
+                    Math.round(current.pressure_msl) + ' hPa';
+
+                // 根據 WMO 天氣碼顯示天氣描述
+                document.getElementById('weatherDescription').textContent = 
+                    getWeatherDescription(current.weather_code);
+
+                weatherInfo.classList.add('show');
+                loading.classList.remove('show');
+
+            } catch (err) {
+                console.error('Error:', err);
+                showError('無法獲取天氣信息，請重試');
+                loading.classList.remove('show');
+            }
+        }
+
+        function getWeatherDescription(code) {
+            const descriptions = {
+                0: '晴朗',
+                1: '主要晴朗',
+                2: '部分多雲',
+                3: '陰天',
+                45: '霧',
+                48: '沈降霧',
+                51: '小雨',
+                53: '中等雨',
+                55: '大雨',
+                61: '小雨',
+                63: '中等雨',
+                65: '大雨',
+                71: '小雪',
+                73: '中等雪',
+                75: '大雪',
+                77: '雪粒',
+                80: '小陣雨',
+                81: '中等陣雨',
+                82: '大陣雨',
+                85: '小雪陣',
+                86: '大雪陣',
+                95: '雷暴',
+                96: '帶冰雹的雷暴',
+                99: '帶大冰雹的雷暴'
+            };
+            return descriptions[code] || '未知';
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+    </script>
+</body>
+</html>

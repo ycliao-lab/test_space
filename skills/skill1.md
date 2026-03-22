@@ -1,0 +1,2 @@
+建立component時要系統化，用production邏輯
+CSS 不可以hardcode 要有variable
